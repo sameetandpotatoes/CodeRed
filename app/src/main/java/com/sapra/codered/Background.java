@@ -19,6 +19,8 @@ import android.os.IBinder;
 import android.support.v4.app.NotificationCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.telephony.SmsManager;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -70,6 +72,9 @@ public class Background extends AppCompatActivity implements SensorEventListener
     // Used for checking settings to determine if the device has optimal location settings
     protected LocationSettingsRequest mLocationSettingsRequest;
 
+    private RecyclerView listView;
+    private RecyclerView.LayoutManager mLayoutManager;
+
     private Notifier mBoundService;
 
     private ServiceConnection mConnection = new ServiceConnection() {
@@ -89,9 +94,9 @@ public class Background extends AppCompatActivity implements SensorEventListener
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_background);
 
-        ListView listView = (ListView) findViewById(R.id.list);
+        listView = (RecyclerView) findViewById(R.id.list);
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.attachToListView(listView);
+        fab.attachToRecyclerView(listView);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -117,7 +122,9 @@ public class Background extends AppCompatActivity implements SensorEventListener
 
         activateSensors();
 
-        customAdapter = new ListAdapter(this, R.layout.active_contact_list_item);
+        mLayoutManager = new LinearLayoutManager(this);
+        listView.setLayoutManager(mLayoutManager);
+        customAdapter = new ListAdapter(R.layout.active_contact_list_item);
         listView.setAdapter(customAdapter);
     }
 
@@ -282,51 +289,49 @@ public class Background extends AppCompatActivity implements SensorEventListener
         sms.sendTextMessage(number, null, message, null, null);
     }
 
-    public class ListAdapter extends ArrayAdapter<Contact> {
+    public class ListAdapter extends RecyclerView.Adapter<ListAdapter.ViewHolder> {
 
         private int resourceID;
-        public ListAdapter(Context context, int textViewResourceId) {
-            super(context, textViewResourceId);
+        public ListAdapter(int textViewResourceId) {
             this.resourceID = textViewResourceId;
         }
 
-        private class ViewHolder {
-            TextView name;
-            ImageView image;
+        public class ViewHolder extends RecyclerView.ViewHolder {
+            public TextView name;
+            public ImageView image;
+
+            public ViewHolder(View itemView) {
+                super(itemView);
+            }
         }
 
         @Override
-        public int getCount() {
+        public int getItemCount() {
             return active_contacts.size();
         }
 
         @Override
-        public View getView(final int position, View convertView, ViewGroup parent) {
-            ViewHolder holder = null;
-
-            if (convertView == null) {
-                LayoutInflater vi = (LayoutInflater)getSystemService(
+        public ListAdapter.ViewHolder onCreateViewHolder(ViewGroup parent,
+                                                       int viewType) {
+            // create a new view
+            LayoutInflater vi = (LayoutInflater)getSystemService(
                         Context.LAYOUT_INFLATER_SERVICE);
-                convertView = vi.inflate(resourceID, null);
+            View convertView = vi.inflate(resourceID, null);
+            ViewHolder holder = new ViewHolder(convertView);
+            holder.image = (ImageView) convertView.findViewById(R.id.person_image);
+            holder.name = (TextView) convertView.findViewById(R.id.name);
+            return holder;
+        }
 
-                holder = new ViewHolder();
-                holder.image = (ImageView) convertView.findViewById(R.id.person_image);
-                holder.name = (TextView) convertView.findViewById(R.id.name);
-                convertView.setTag(holder);
-            }
-            else {
-                holder = (ViewHolder) convertView.getTag();
-            }
-
-
+        // Replace the contents of a view (invoked by the layout manager)
+        @Override
+        public void onBindViewHolder(ViewHolder holder, int position) {
             Contact c = active_contacts.get(position);
             holder.name.setText(c.getName());
             holder.image.setImageURI(c.getImageUrl());
             if (holder.image.getDrawable() == null){
                 holder.image.setImageResource(R.drawable.person);
             }
-
-            return convertView;
         }
     }
 
