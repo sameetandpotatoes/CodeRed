@@ -46,7 +46,6 @@ import com.google.android.gms.location.LocationSettingsRequest;
 import com.google.android.gms.location.LocationSettingsResult;
 import com.google.android.gms.location.LocationSettingsStatusCodes;
 import com.melnykov.fab.FloatingActionButton;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 
@@ -126,6 +125,34 @@ public class Background extends AppCompatActivity implements SensorEventListener
         listView.setLayoutManager(mLayoutManager);
         customAdapter = new ListAdapter(R.layout.active_contact_list_item);
         listView.setAdapter(customAdapter);
+
+        SwipeableRecyclerViewTouchListener swipeTouchListener =
+                new SwipeableRecyclerViewTouchListener(listView,
+                        new SwipeableRecyclerViewTouchListener.SwipeListener() {
+                            @Override
+                            public boolean canSwipe(int position) {
+                                return true;
+                            }
+
+                            @Override
+                            public void onDismissedBySwipeLeft(RecyclerView recyclerView, int[] reverseSortedPositions) {
+                                for (int position : reverseSortedPositions) {
+                                    active_contacts.remove(position);
+                                }
+                                customAdapter.notifyDataSetChanged();
+                                Toast.makeText(getApplicationContext(), "Contact removed successfully", Toast.LENGTH_LONG).show();
+                            }
+
+                            @Override
+                            public void onDismissedBySwipeRight(RecyclerView recyclerView, int[] reverseSortedPositions) {
+                                for (int position : reverseSortedPositions) {
+                                    active_contacts.remove(position);
+                                }
+                                customAdapter.notifyDataSetChanged();
+                                Toast.makeText(getApplicationContext(), "Contact removed successfully", Toast.LENGTH_LONG).show();
+                            }
+                        });
+        listView.addOnItemTouchListener(swipeTouchListener);
     }
 
     private void activateSensors() {
